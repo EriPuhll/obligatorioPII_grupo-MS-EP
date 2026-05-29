@@ -41,6 +41,14 @@ public class Evento {
             throw new InstruccionesInvalidasException();
         }
 
+        for (int i = 0; i < instrucciones.size(); i++) {
+            String instruccion = instrucciones.get(i);
+
+            if (instruccion == null || instruccion.trim().isEmpty()) {
+                throw new InstruccionesInvalidasException();
+            }
+        }
+
         this.instrucciones = instrucciones;
     }
 
