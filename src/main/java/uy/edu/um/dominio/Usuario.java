@@ -8,9 +8,12 @@ public class Usuario {
     // uid y alias son final
     private final int uid;
     private final String alias;
-    private String tipo;
+    private TipoUsuario tipo;
 
-    public Usuario(int uid, String alias, String tipo) throws TipoUsuarioInvalidoException, DatoInvalidoException {
+    //Constructor
+    public Usuario(int uid, String alias, String tipo)
+            throws TipoUsuarioInvalidoException, DatoInvalidoException {
+
         if (uid < 0) {
             throw new DatoInvalidoException("El UID no puede ser negativo");
         }
@@ -32,7 +35,7 @@ public class Usuario {
         return alias;
     }
 
-    public String getTipo() {
+    public TipoUsuario getTipo() {
         return tipo;
     }
 
@@ -41,22 +44,20 @@ public class Usuario {
             throw new TipoUsuarioInvalidoException();
         }
 
-        // normalización de tipo de usuario
         tipo = tipo.trim().toUpperCase();
 
         if (!tipo.equals("ADMIN") && !tipo.equals("GENERIC")) {
             throw new TipoUsuarioInvalidoException();
         }
 
-        this.tipo = tipo;
+        this.tipo = TipoUsuario.valueOf(tipo);
     }
 
-    // pesos según la letra
+    // Devuelve el peso del usuario según su tipo
     public int getPeso() {
-        if (tipo.equals("ADMIN")) {
+        if (tipo == TipoUsuario.ADMIN) {
             return 32;
         }
-
         return 16;
     }
 
