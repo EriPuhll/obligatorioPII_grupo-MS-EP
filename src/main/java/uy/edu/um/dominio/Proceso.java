@@ -12,12 +12,17 @@ public class Proceso {
     private String nombre;
     private Usuario usuario;
     private int prioridad;
-    private String estado;
-    private String estadoFinalizacion;
+    private EstadoProceso estado;
+    private EstadoFinalizacion estadoFinalizacion;
     private MyList<Evento> eventos;
 
+    // Constructor
     public Proceso(int pid, String nombre, Usuario usuario, MyList<Evento> eventos)
             throws EstadoProcesoInvalidoException, EventosInvalidosException, DatoInvalidoException {
+
+        if (pid <= 0) {
+            throw new DatoInvalidoException("El PID del proceso debe ser mayor a cero");
+        }
 
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new DatoInvalidoException("El nombre del proceso no puede estar vacío");
@@ -57,31 +62,28 @@ public class Proceso {
         this.prioridad = prioridad;
     }
 
-    public String getEstado() {
+    public EstadoProceso getEstado() {
         return estado;
     }
 
+    // Válida y convierte el texto recibido al enum EstadoProceso
     public void setEstado(String estado) throws EstadoProcesoInvalidoException {
-        if (estado == null) {
+        if (estado == null || estado.trim().isEmpty()) {
             throw new EstadoProcesoInvalidoException();
         }
 
-        estado = estado.trim().toUpperCase();
-
-        if (!estado.equals("NEW") &&
-                !estado.equals("PENDING") &&
-                !estado.equals("RUNNING") &&
-                !estado.equals("FINISHED")) {
+        try {
+            this.estado = EstadoProceso.valueOf(estado.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
             throw new EstadoProcesoInvalidoException();
         }
-
-        this.estado = estado;
     }
 
-    public String getEstadoFinalizacion() {
+    public EstadoFinalizacion getEstadoFinalizacion() {
         return estadoFinalizacion;
     }
 
+    // Válida y convierte el texto recibido al enum EstadoFinalizacion
     public void setEstadoFinalizacion(String estadoFinalizacion) throws EstadoFinalizacionInvalidoException {
         if (estadoFinalizacion == null) {
             this.estadoFinalizacion = null;
@@ -96,23 +98,52 @@ public class Proceso {
             throw new EstadoFinalizacionInvalidoException();
         }
 
-        this.estadoFinalizacion = estadoFinalizacion;
+        if (estadoFinalizacion.equals("TERM")) {
+            estadoFinalizacion = "TERMINATED";
+        }
+
+        this.estadoFinalizacion = EstadoFinalizacion.valueOf(estadoFinalizacion);
     }
 
     public MyList<Evento> getEventos() {
         return eventos;
     }
 
+    // Válida que el proceso tenga al menos un evento y que no haya eventos nulos
     public void setEventos(MyList<Evento> eventos) throws EventosInvalidosException {
         if (eventos == null || eventos.size() == 0) {
             throw new EventosInvalidosException();
         }
 
+        for (int i = 0; i < eventos.size(); i++) {
+            if (eventos.get(i) == null) {
+                throw new EventosInvalidosException();
+            }
+        }
+
         this.eventos = eventos;
     }
 
+    // Cambia el proceso a estado PENDING.
+    public void pasarAPending() throws EstadoProcesoInvalidoException {
+        setEstado("PENDING");
+    }
+
+
+    // Cambia el proceso a estado RUNNING.
+    public void pasarARunning() throws EstadoProcesoInvalidoException {
+        setEstado("RUNNING");
+    }
+
+// Cambia el proceso a estado FINISHED y asigna cómo finalizó.
+   public void finalizar(String estadoFinalizacion)
+        throws EstadoProcesoInvalidoException, EstadoFinalizacionInvalidoException {
+        setEstado("FINISHED");
+        setEstadoFinalizacion(estadoFinalizacion);
+   }
+
     // metodo para imprimir proceso con sus eventos
-    public String eventosToString() {
+    private String eventosToString() {
         String resultado = "";
 
         for (int i = 0; i < eventos.size(); i++) {
