@@ -15,7 +15,18 @@ public class Evento {
         setInstrucciones(instrucciones);
     }
 
+    // Constructor usando directamente el enum TipoEvento
+    public Evento(TipoEvento tipo, MyList<String> instrucciones) throws TipoEventoInvalidoException, InstruccionesInvalidasException {
+        setTipo(tipo);
+        setInstrucciones(instrucciones);
+    }
+
     public TipoEvento getTipo() {
+        return tipo;
+    }
+
+    // Getter agregado para que coincida con Proceso y ProcessManagerImpl
+    public TipoEvento getTipoEvento() {
         return tipo;
     }
 
@@ -23,7 +34,7 @@ public class Evento {
         return instrucciones;
     }
 
-    // Válida y convierte el texto recibido al enum TipoEvento.
+    // Valida y convierte el texto recibido al enum TipoEvento.
     private void setTipo(String tipo) throws TipoEventoInvalidoException {
         if (tipo == null || tipo.trim().isEmpty()) {
             throw new TipoEventoInvalidoException();
@@ -36,7 +47,16 @@ public class Evento {
         }
     }
 
-    //Válida que exista al menos una instrucción y que ninguna sea vacía. Funciona como setter del atributo instrucciones.
+    // Valida y asigna directamente el enum TipoEvento.
+    private void setTipo(TipoEvento tipo) throws TipoEventoInvalidoException {
+        if (tipo == null) {
+            throw new TipoEventoInvalidoException();
+        }
+
+        this.tipo = tipo;
+    }
+
+    //Valida que exista al menos una instrucción y que ninguna sea vacía. Funciona como setter del atributo instrucciones.
     private void setInstrucciones(MyList<String> instrucciones) throws InstruccionesInvalidasException {
         if (instrucciones == null || instrucciones.size() == 0) {
             throw new InstruccionesInvalidasException();
@@ -49,6 +69,7 @@ public class Evento {
                 throw new InstruccionesInvalidasException();
             }
         }
+
         this.instrucciones = instrucciones;
     }
 
@@ -69,5 +90,4 @@ public class Evento {
 
         return resultado;
     }
-
 }

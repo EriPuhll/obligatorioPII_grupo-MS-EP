@@ -27,6 +27,23 @@ public class Usuario {
         setTipo(tipo);
     }
 
+    // Constructor usando directamente el enum TipoUsuario
+    public Usuario(int uid, String alias, TipoUsuario tipo)
+            throws TipoUsuarioInvalidoException, DatoInvalidoException {
+
+        if (uid < 0) {
+            throw new DatoInvalidoException("El UID no puede ser negativo");
+        }
+
+        if (alias == null || alias.trim().isEmpty()) {
+            throw new DatoInvalidoException("El alias del usuario no puede estar vacío");
+        }
+
+        this.uid = uid;
+        this.alias = alias.trim();
+        setTipo(tipo);
+    }
+
     public int getUid() {
         return uid;
     }
@@ -51,6 +68,15 @@ public class Usuario {
         }
 
         this.tipo = TipoUsuario.valueOf(tipo);
+    }
+
+    // Valida y asigna directamente el enum TipoUsuario
+    public void setTipo(TipoUsuario tipo) throws TipoUsuarioInvalidoException {
+        if (tipo == null) {
+            throw new TipoUsuarioInvalidoException();
+        }
+
+        this.tipo = tipo;
     }
 
     // Devuelve el peso del usuario según su tipo

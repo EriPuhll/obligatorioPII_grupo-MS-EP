@@ -6,7 +6,7 @@ import uy.edu.um.exceptions.EstadoProcesoInvalidoException;
 import uy.edu.um.exceptions.EventosInvalidosException;
 import uy.edu.um.tad.list.MyList;
 
-public class Proceso {
+public class Proceso implements Comparable<Proceso> {
 
     private int pid;
     private String nombre;
@@ -37,7 +37,7 @@ public class Proceso {
         this.usuario = usuario;
         this.prioridad = 0;
         this.estadoFinalizacion = null;
-        setEstado("NEW");
+        this.estado = EstadoProceso.NEW;
         setEventos(eventos);
     }
 
@@ -53,7 +53,43 @@ public class Proceso {
         return usuario;
     }
 
-    // el calculo de la prioridad lo haremos en el ProcessManager
+    // el calculo de la prioridad se realiza según los eventos y el tipo de usuario
+    public void calcularPrioridad() {
+        int cantidadCpu = 0;
+        int cantidadRam = 0;
+        int cantidadDisk = 0;
+
+        int totalEventos = eventos.size();
+
+        if (totalEventos == 0) {
+            this.prioridad = 0;
+            return;
+        }
+
+        for (int i = 0; i < eventos.size(); i++) {
+            Evento evento = eventos.get(i);
+
+            if (evento.getTipoEvento() == TipoEvento.CPU) {
+                cantidadCpu++;
+            } else if (evento.getTipoEvento() == TipoEvento.RAM) {
+                cantidadRam++;
+            } else if (evento.getTipoEvento() == TipoEvento.DISK) {
+                cantidadDisk++;
+            }
+        }
+
+        int pesoUsuario;
+
+        if (usuario.getTipo() == TipoUsuario.ADMIN) {
+            pesoUsuario = 32;
+        } else {
+            pesoUsuario = 16;
+        }
+
+        this.prioridad = ((8 * cantidadCpu + 2 * cantidadRam + 2 * cantidadDisk) / totalEventos)
+                + pesoUsuario * totalEventos;
+    }
+
     public int getPrioridad() {
         return prioridad;
     }
@@ -66,7 +102,7 @@ public class Proceso {
         return estado;
     }
 
-    // Válida y convierte el texto recibido al enum EstadoProceso
+    // Valida y convierte el texto recibido al enum EstadoProceso
     public void setEstado(String estado) throws EstadoProcesoInvalidoException {
         if (estado == null || estado.trim().isEmpty()) {
             throw new EstadoProcesoInvalidoException();
@@ -79,11 +115,20 @@ public class Proceso {
         }
     }
 
+    // Valida y asigna directamente el enum EstadoProceso
+    public void setEstado(EstadoProceso estado) throws EstadoProcesoInvalidoException {
+        if (estado == null) {
+            throw new EstadoProcesoInvalidoException();
+        }
+
+        this.estado = estado;
+    }
+
     public EstadoFinalizacion getEstadoFinalizacion() {
         return estadoFinalizacion;
     }
 
-    // Válida y convierte el texto recibido al enum EstadoFinalizacion
+    // Valida y convierte el texto recibido al enum EstadoFinalizacion
     public void setEstadoFinalizacion(String estadoFinalizacion) throws EstadoFinalizacionInvalidoException {
         if (estadoFinalizacion == null) {
             this.estadoFinalizacion = null;
@@ -92,24 +137,36 @@ public class Proceso {
 
         estadoFinalizacion = estadoFinalizacion.trim().toUpperCase();
 
+        if (estadoFinalizacion.equals("TERM")) {
+            estadoFinalizacion = "TERMINATED";
+        }
+
         if (!estadoFinalizacion.equals("OK") &&
                 !estadoFinalizacion.equals("ERROR") &&
                 !estadoFinalizacion.equals("TERMINATED")) {
             throw new EstadoFinalizacionInvalidoException();
         }
 
-        if (estadoFinalizacion.equals("TERM")) {
-            estadoFinalizacion = "TERMINATED";
+        this.estadoFinalizacion = EstadoFinalizacion.valueOf(estadoFinalizacion);
+    }
+
+    // Valida y asigna directamente el enum EstadoFinalizacion
+    public void setEstadoFinalizacion(EstadoFinalizacion estadoFinalizacion)
+            throws EstadoFinalizacionInvalidoException {
+
+        if (estadoFinalizacion == null) {
+            this.estadoFinalizacion = null;
+            return;
         }
 
-        this.estadoFinalizacion = EstadoFinalizacion.valueOf(estadoFinalizacion);
+        this.estadoFinalizacion = estadoFinalizacion;
     }
 
     public MyList<Evento> getEventos() {
         return eventos;
     }
 
-    // Válida que el proceso tenga al menos un evento y que no haya eventos nulos
+    // Valida que el proceso tenga al menos un evento y que no haya eventos nulos
     public void setEventos(MyList<Evento> eventos) throws EventosInvalidosException {
         if (eventos == null || eventos.size() == 0) {
             throw new EventosInvalidosException();
@@ -126,21 +183,27 @@ public class Proceso {
 
     // Cambia el proceso a estado PENDING.
     public void pasarAPending() throws EstadoProcesoInvalidoException {
-        setEstado("PENDING");
+        setEstado(EstadoProceso.PENDING);
     }
-
 
     // Cambia el proceso a estado RUNNING.
     public void pasarARunning() throws EstadoProcesoInvalidoException {
-        setEstado("RUNNING");
+        setEstado(EstadoProceso.RUNNING);
     }
 
-// Cambia el proceso a estado FINISHED y asigna cómo finalizó.
-   public void finalizar(String estadoFinalizacion)
-        throws EstadoProcesoInvalidoException, EstadoFinalizacionInvalidoException {
-        setEstado("FINISHED");
+    // Cambia el proceso a estado FINISHED y asigna cómo finalizó.
+    public void finalizar(String estadoFinalizacion)
+            throws EstadoProcesoInvalidoException, EstadoFinalizacionInvalidoException {
+        setEstado(EstadoProceso.FINISHED);
         setEstadoFinalizacion(estadoFinalizacion);
-   }
+    }
+
+    // Cambia el proceso a estado FINISHED y asigna cómo finalizó usando enum.
+    public void finalizar(EstadoFinalizacion estadoFinalizacion)
+            throws EstadoProcesoInvalidoException, EstadoFinalizacionInvalidoException {
+        setEstado(EstadoProceso.FINISHED);
+        setEstadoFinalizacion(estadoFinalizacion);
+    }
 
     // metodo para imprimir proceso con sus eventos
     private String eventosToString() {
@@ -155,6 +218,12 @@ public class Proceso {
         }
 
         return resultado;
+    }
+
+    // agrego metodo comparable
+    @Override
+    public int compareTo(Proceso otro) {
+        return Integer.compare(this.prioridad, otro.prioridad);
     }
 
     @Override
