@@ -1,10 +1,15 @@
 package uy.edu.um.doors;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 import uy.edu.um.dominio.EstadoFinalizacion;
 import uy.edu.um.dominio.EstadoProceso;
 import uy.edu.um.dominio.Evento;
 import uy.edu.um.dominio.Proceso;
 import uy.edu.um.dominio.Usuario;
+import uy.edu.um.dominio.TipoEvento;
 
 import uy.edu.um.exceptions.EstadoFinalizacionInvalidoException;
 import uy.edu.um.exceptions.EstadoProcesoInvalidoException;
@@ -25,6 +30,7 @@ import uy.edu.um.tad.hash.MyHash;
 import uy.edu.um.tad.hash.MyHashImpl;
 
 import uy.edu.um.tad.list.MyList;
+import uy.edu.um.tad.list.MyLinkedListImpl;
 
 public class ProcessManagerImpl implements ProcessManager {
 
@@ -50,7 +56,174 @@ public class ProcessManagerImpl implements ProcessManager {
 
     @Override
     public void loadProcessAndUserData(String processCsvPath, String usersCsvPath) {
-        System.out.println("IMPLEMENTAR CARGA CSV");
+        cargarUsuarios(usersCsvPath);
+        cargarProcesos(processCsvPath);
+
+        System.out.println("Carga finalizada.");
+        System.out.println("Usuarios cargados: " + usuarios.size());
+        System.out.println("Procesos cargados en NEW: " + procesosNuevos.size());
+    }
+
+    private void cargarUsuarios(String usersCsvPath) {
+        try (BufferedReader br = new BufferedReader(new FileReader(usersCsvPath))) {
+            String linea = br.readLine(); // saltea encabezado: uid;alias;type
+
+            while ((linea = br.readLine()) != null) {
+                if (linea.trim().isEmpty()) {
+                    continue;
+                }
+
+                String[] partes = linea.split(";");
+
+                if (partes.length != 3) {
+                    System.out.println("Línea de usuario inválida: " + linea);
+                    continue;
+                }
+
+                try {
+                    int uid = Integer.parseInt(partes[0].trim());
+                    String alias = partes[1].trim();
+                    String tipo = partes[2].trim();
+
+                    if (usuarios.contains(uid)) {
+                        System.out.println("Usuario duplicado, se ignora UID=" + uid);
+                        continue;
+                    }
+
+                    Usuario usuario = new Usuario(uid, alias, tipo);
+                    usuarios.put(uid, usuario);
+
+                } catch (Exception e) {
+                    System.out.println("Error al cargar usuario: " + linea);
+                }
+            }
+
+        } catch (IOException e) {
+            System.out.println("No se pudo leer el archivo de usuarios.");
+        }
+    }
+
+    private void cargarProcesos(String processCsvPath) {
+        try (BufferedReader br = new BufferedReader(new FileReader(processCsvPath))) {
+            String linea = br.readLine(); // saltea encabezado: pid;uid;name;events
+
+            while ((linea = br.readLine()) != null) {
+                if (linea.trim().isEmpty()) {
+                    continue;
+                }
+
+                String[] partes = linea.split(";", 4);
+
+                if (partes.length != 4) {
+                    System.out.println("Línea de proceso inválida: " + linea);
+                    continue;
+                }
+
+                try {
+                    int pid = Integer.parseInt(partes[0].trim());
+                    int uid = Integer.parseInt(partes[1].trim());
+                    String nombre = partes[2].trim();
+                    String eventosTexto = partes[3].trim();
+
+                    if (procesosEnMemoria.contains(pid)) {
+                        System.out.println("Proceso duplicado, se ignora PID=" + pid);
+                        continue;
+                    }
+
+                    Usuario usuario = usuarios.get(uid);
+
+                    if (usuario == null) {
+                        System.out.println("No existe usuario para el proceso PID=" + pid + " UID=" + uid);
+                        continue;
+                    }
+
+                    MyList<Evento> eventos = parsearEventos(eventosTexto);
+
+                    Proceso proceso = new Proceso(pid, nombre, usuario, eventos);
+
+                    procesosNuevos.enqueue(proceso);
+                    procesosEnMemoria.put(pid, proceso);
+
+                } catch (Exception e) {
+                    System.out.println("Error al cargar proceso: " + linea);
+                }
+            }
+
+        } catch (IOException e) {
+            System.out.println("No se pudo leer el archivo de procesos.");
+        }
+    }
+
+    private MyList<Evento> parsearEventos(String eventosTexto) throws Exception {
+        MyList<Evento> eventos = new MyLinkedListImpl<>();
+
+        if (eventosTexto == null || eventosTexto.trim().isEmpty()) {
+            return eventos;
+        }
+
+        eventosTexto = eventosTexto.trim();
+
+        if (eventosTexto.startsWith("{")) {
+            eventosTexto = eventosTexto.substring(1);
+        }
+
+        if (eventosTexto.endsWith("}")) {
+            eventosTexto = eventosTexto.substring(0, eventosTexto.length() - 1);
+        }
+
+        String[] eventosSeparados = eventosTexto.split("#");
+
+        for (int i = 0; i < eventosSeparados.length; i++) {
+            String eventoTexto = eventosSeparados[i].trim();
+
+            if (eventoTexto.isEmpty()) {
+                continue;
+            }
+
+            int posicionDosPuntos = eventoTexto.indexOf(":");
+
+            if (posicionDosPuntos == -1) {
+                continue;
+            }
+
+            String tipoTexto = eventoTexto.substring(0, posicionDosPuntos).trim();
+            String instruccionesTexto = eventoTexto.substring(posicionDosPuntos + 1).trim();
+
+            if (instruccionesTexto.startsWith("[")) {
+                instruccionesTexto = instruccionesTexto.substring(1);
+            }
+
+            if (instruccionesTexto.endsWith("]")) {
+                instruccionesTexto = instruccionesTexto.substring(0, instruccionesTexto.length() - 1);
+            }
+
+            MyList<String> instrucciones = parsearInstrucciones(instruccionesTexto);
+
+            Evento evento = new Evento(tipoTexto, instrucciones);
+            eventos.add(evento);
+        }
+
+        return eventos;
+    }
+
+    private MyList<String> parsearInstrucciones(String instruccionesTexto) {
+        MyList<String> instrucciones = new MyLinkedListImpl<>();
+
+        if (instruccionesTexto == null || instruccionesTexto.trim().isEmpty()) {
+            return instrucciones;
+        }
+
+        String[] instruccionesSeparadas = instruccionesTexto.split(",");
+
+        for (int i = 0; i < instruccionesSeparadas.length; i++) {
+            String instruccion = instruccionesSeparadas[i].trim();
+
+            if (!instruccion.isEmpty()) {
+                instrucciones.add(instruccion);
+            }
+        }
+
+        return instrucciones;
     }
 
     @Override
