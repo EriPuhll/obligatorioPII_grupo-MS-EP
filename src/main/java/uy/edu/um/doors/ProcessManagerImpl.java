@@ -9,7 +9,6 @@ import uy.edu.um.dominio.EstadoProceso;
 import uy.edu.um.dominio.Evento;
 import uy.edu.um.dominio.Proceso;
 import uy.edu.um.dominio.Usuario;
-import uy.edu.um.dominio.TipoEvento;
 
 import uy.edu.um.exceptions.EstadoFinalizacionInvalidoException;
 import uy.edu.um.exceptions.EstadoProcesoInvalidoException;
@@ -360,6 +359,7 @@ public class ProcessManagerImpl implements ProcessManager {
                             + " | STATE: " + procesoDescartado.getEstadoFinalizacion()
                             + " | USER:" + procesoDescartado.getUsuario().getAlias()
                             + " UID:" + procesoDescartado.getUsuario().getUid());
+                    procesosEnMemoria.remove(procesoDescartado.getPid());
 
                 } catch (EmptyStackException e) {
                     System.out.println("Error al vaciar pila de finalizados.");
@@ -386,23 +386,175 @@ public class ProcessManagerImpl implements ProcessManager {
         return resultado;
     }
 
+    private void imprimirProcesoResumen(Proceso proceso) {
+        if (proceso == null) {
+            return;
+        }
+
+        if (proceso.getEstado() == EstadoProceso.FINISHED) {
+            System.out.println("PID=" + proceso.getPid()
+                    + " " + proceso.getNombre()
+                    + " | STATE: " + proceso.getEstadoFinalizacion()
+                    + " | USER:" + proceso.getUsuario().getAlias()
+                    + " UID:" + proceso.getUsuario().getUid());
+        } else {
+            System.out.println("PID=" + proceso.getPid()
+                    + " | " + proceso.getNombre()
+                    + " | USER:" + proceso.getUsuario().getAlias()
+                    + " UID:" + proceso.getUsuario().getUid()
+                    + " | P=" + proceso.getPrioridad());
+        }
+    }
+
+    private void imprimirProcesoDetalle(Proceso proceso) {
+        if (proceso == null) {
+            return;
+        }
+
+        imprimirProcesoResumen(proceso);
+
+        MyList<Evento> eventos = proceso.getEventos();
+
+        for (int i = 0; i < eventos.size(); i++) {
+            Evento evento = eventos.get(i);
+
+            System.out.println("  EVENT: " + evento.getTipoEvento()
+                    + " | Instructions " + instruccionesToString(evento.getInstrucciones()));
+        }
+    }
+
     @Override
     public void printStatus() {
-        System.out.println("IMPLEMENTAR STATUS");
+        System.out.println("PROCESS STATUS");
+
+        System.out.println("EXECUTING:");
+        if (procesoEnEjecucion == null) {
+            System.out.println("No hay proceso en ejecución.");
+        } else {
+            imprimirProcesoResumen(procesoEnEjecucion);
+        }
+
+        System.out.println("PENDING:");
+        MyList<Proceso> procesos = procesosEnMemoria.values();
+
+        boolean hayPendientes = false;
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getEstado() == EstadoProceso.PENDING) {
+                imprimirProcesoResumen(proceso);
+                hayPendientes = true;
+            }
+        }
+
+        if (!hayPendientes) {
+            System.out.println("No hay procesos pendientes.");
+        }
+
+        System.out.println("FINISHED:");
+        boolean hayFinalizados = false;
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getEstado() == EstadoProceso.FINISHED) {
+                imprimirProcesoResumen(proceso);
+                hayFinalizados = true;
+            }
+        }
+
+        if (!hayFinalizados) {
+            System.out.println("No hay procesos finalizados en memoria.");
+        }
     }
 
     @Override
     public void printStatusVerbose() {
-        System.out.println("IMPLEMENTAR STATUS VERBOSE");
+        System.out.println("PROCESS STATUS - VERBOSE");
+
+        System.out.println("EXECUTING:");
+        if (procesoEnEjecucion == null) {
+            System.out.println("No hay proceso en ejecución.");
+        } else {
+            imprimirProcesoDetalle(procesoEnEjecucion);
+        }
+
+        System.out.println("PENDING:");
+        MyList<Proceso> procesos = procesosEnMemoria.values();
+
+        boolean hayPendientes = false;
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getEstado() == EstadoProceso.PENDING) {
+                imprimirProcesoDetalle(proceso);
+                hayPendientes = true;
+            }
+        }
+
+        if (!hayPendientes) {
+            System.out.println("No hay procesos pendientes.");
+        }
+
+        System.out.println("FINISHED:");
+        boolean hayFinalizados = false;
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getEstado() == EstadoProceso.FINISHED) {
+                imprimirProcesoDetalle(proceso);
+                hayFinalizados = true;
+            }
+        }
+
+        if (!hayFinalizados) {
+            System.out.println("No hay procesos finalizados en memoria.");
+        }
     }
 
     @Override
     public void printStatusByUser(int uid) {
-        System.out.println("IMPLEMENTAR STATUS POR USUARIO");
+        Usuario usuario = usuarios.get(uid);
+
+        if (usuario == null) {
+            System.out.println("No existe usuario con UID=" + uid);
+            return;
+        }
+
+        System.out.println("PROCESS STATUS BY USER");
+        System.out.println("USER:" + usuario.getAlias() + " UID:" + usuario.getUid());
+
+        MyList<Proceso> procesos = procesosEnMemoria.values();
+
+        boolean encontrado = false;
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getUsuario().getUid() == uid) {
+                imprimirProcesoDetalle(proceso);
+                encontrado = true;
+            }
+        }
+
+        if (!encontrado) {
+            System.out.println("No hay procesos cargados para el usuario indicado.");
+        }
     }
 
     @Override
     public void printStatusByProcess(int pid) {
-        System.out.println("IMPLEMENTAR STATUS POR PROCESO");
+        Proceso proceso = procesosEnMemoria.get(pid);
+
+        if (proceso == null) {
+            System.out.println("No existe proceso cargado en memoria con PID=" + pid);
+            return;
+        }
+
+        System.out.println("PROCESS STATUS BY PID");
+        imprimirProcesoDetalle(proceso);
     }
 }
