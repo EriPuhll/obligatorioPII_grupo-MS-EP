@@ -41,6 +41,7 @@ public class ProcessManagerImpl implements ProcessManager {
     private MyHash<Integer, Proceso> procesosEnMemoria;
 
     private Proceso procesoEnEjecucion;
+    private DoorsLogger logger;
 
     public ProcessManagerImpl() {
         this.procesosNuevos = new MyQueueImpl<>();
@@ -51,6 +52,7 @@ public class ProcessManagerImpl implements ProcessManager {
         this.procesosEnMemoria = new MyHashImpl<>();
 
         this.procesoEnEjecucion = null;
+        this.logger = new DoorsLogger();
     }
 
     @Override
@@ -236,11 +238,14 @@ public class ProcessManagerImpl implements ProcessManager {
 
                 procesosPendientes.insert(proceso);
 
-                System.out.println("NEW PENDING PROCESS: PID=" + proceso.getPid()
+                String mensaje = "NEW PENDING PROCESS: PID=" + proceso.getPid()
                         + " | " + proceso.getNombre()
                         + " | USER:" + proceso.getUsuario().getAlias()
                         + " UID:" + proceso.getUsuario().getUid()
-                        + " | P=" + proceso.getPrioridad());
+                        + " | P=" + proceso.getPrioridad();
+
+                System.out.println(mensaje);
+                logger.log(mensaje);
 
             } catch (EmptyQueueException e) {
                 System.out.println("No hay procesos nuevos para preparar.");
@@ -268,18 +273,25 @@ public class ProcessManagerImpl implements ProcessManager {
             proceso.setEstado(EstadoProceso.RUNNING);
             procesoEnEjecucion = proceso;
 
-            System.out.println("EXECUTING PROCESS: PID=" + proceso.getPid()
+            String bloque = "EXECUTING PROCESS: PID=" + proceso.getPid()
                     + " | USER:" + proceso.getUsuario().getAlias()
-                    + " UID:" + proceso.getUsuario().getUid());
+                    + " UID:" + proceso.getUsuario().getUid();
+
+            System.out.println(bloque);
 
             MyList<Evento> eventos = proceso.getEventos();
 
             for (int i = 0; i < eventos.size(); i++) {
                 Evento evento = eventos.get(i);
 
-                System.out.println("EVENT: " + evento.getTipoEvento()
-                        + " | Instructions " + instruccionesToString(evento.getInstrucciones()));
+                String lineaEvento = "EVENT: " + evento.getTipoEvento()
+                        + " | Instructions " + instruccionesToString(evento.getInstrucciones());
+
+                System.out.println(lineaEvento);
+                bloque += System.lineSeparator() + lineaEvento;
             }
+
+            logger.logBlock(bloque);
 
         } catch (EmptyHeapException e) {
             System.out.println("No hay procesos pendientes para ejecutar.");
@@ -318,14 +330,19 @@ public class ProcessManagerImpl implements ProcessManager {
             return;
         }
 
+        String mensaje;
+
         if (estadoFinalizacion == EstadoFinalizacion.TERMINATED) {
-            System.out.println("ENDING PROCESS: PID=" + proceso.getPid()
+            mensaje = "ENDING PROCESS: PID=" + proceso.getPid()
                     + " | STATE: TERMINATED by USER:" + usuarioResponsable.getAlias()
-                    + " UID:" + usuarioResponsable.getUid());
+                    + " UID:" + usuarioResponsable.getUid();
         } else {
-            System.out.println("ENDING PROCESS: PID=" + proceso.getPid()
-                    + " | STATE: " + estadoFinalizacion);
+            mensaje = "ENDING PROCESS: PID=" + proceso.getPid()
+                    + " | STATE: " + estadoFinalizacion;
         }
+
+        System.out.println(mensaje);
+        logger.log(mensaje);
 
         agregarProcesoFinalizado(proceso);
         procesoEnEjecucion = null;
@@ -348,23 +365,31 @@ public class ProcessManagerImpl implements ProcessManager {
 
     private void agregarProcesoFinalizado(Proceso proceso) {
         if (procesosFinalizados.size() == MAX_FINISHED_PROCESS_ON_RAM) {
-            System.out.println("Finished process stack overflow");
+            String bloque = "Finished process stack overflow";
+
+            System.out.println(bloque);
 
             while (!procesosFinalizados.isEmpty()) {
                 try {
                     Proceso procesoDescartado = procesosFinalizados.pop();
 
-                    System.out.println("PID=" + procesoDescartado.getPid()
+                    String lineaProceso = "PID=" + procesoDescartado.getPid()
                             + " " + procesoDescartado.getNombre()
                             + " | STATE: " + procesoDescartado.getEstadoFinalizacion()
                             + " | USER:" + procesoDescartado.getUsuario().getAlias()
-                            + " UID:" + procesoDescartado.getUsuario().getUid());
+                            + " UID:" + procesoDescartado.getUsuario().getUid();
+
+                    System.out.println(lineaProceso);
+                    bloque += System.lineSeparator() + lineaProceso;
+
                     procesosEnMemoria.remove(procesoDescartado.getPid());
 
                 } catch (EmptyStackException e) {
                     System.out.println("Error al vaciar pila de finalizados.");
                 }
             }
+
+            logger.logBlock(bloque);
         }
 
         procesosFinalizados.push(proceso);
