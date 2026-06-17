@@ -40,7 +40,7 @@ public class DoorsLogger {
             writer.write(texto);
             writer.write(System.lineSeparator());
         } catch (IOException e) {
-            System.out.println("No se pudo escribir en el archivo de log.");
+            System.out.println("No se pudo escribir en el archivo de log." + e.getMessage());
         }
     }
 }

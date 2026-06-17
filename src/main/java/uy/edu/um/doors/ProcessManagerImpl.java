@@ -448,6 +448,75 @@ public class ProcessManagerImpl implements ProcessManager {
         }
     }
 
+    private void imprimirPendientesOrdenados(boolean verbose) {
+
+        MyHeap<Proceso> pendientesOrdenados = new MyHeapImpl<>(false);
+        MyList<Proceso> procesos = procesosEnMemoria.values();
+
+        for (int i = 0; i < procesos.size(); i++) {
+            Proceso proceso = procesos.get(i);
+
+            if (proceso.getEstado() == EstadoProceso.PENDING) {
+                pendientesOrdenados.insert(proceso);
+            }
+        }
+
+        if (pendientesOrdenados.isEmpty()) {
+            System.out.println("No hay procesos pendientes.");
+            return;
+        }
+
+        while (!pendientesOrdenados.isEmpty()) {
+            try {
+                Proceso proceso = pendientesOrdenados.remove();
+
+                if (verbose) {
+                    imprimirProcesoDetalle(proceso);
+                } else {
+                    imprimirProcesoResumen(proceso);
+                }
+
+            } catch (EmptyHeapException e) {
+                System.out.println("Error al mostrar procesos pendientes.");
+            }
+        }
+    }
+
+    private void imprimirFinalizadosDesdePila(boolean verbose) {
+
+        if (procesosFinalizados.isEmpty()) {
+            System.out.println("No hay procesos finalizados en memoria.");
+            return;
+        }
+
+        MyStack<Proceso> auxiliar = new MyStackImpl<>();
+
+        while (!procesosFinalizados.isEmpty()) {
+            try {
+                Proceso proceso = procesosFinalizados.pop();
+
+                if (verbose) {
+                    imprimirProcesoDetalle(proceso);
+                } else {
+                    imprimirProcesoResumen(proceso);
+                }
+
+                auxiliar.push(proceso);
+
+            } catch (EmptyStackException e) {
+                System.out.println("Error al mostrar procesos finalizados.");
+            }
+        }
+
+        while (!auxiliar.isEmpty()) {
+            try {
+                procesosFinalizados.push(auxiliar.pop());
+            } catch (EmptyStackException e) {
+                System.out.println("Error al restaurar pila de finalizados.");
+            }
+        }
+    }
+
     @Override
     public void printStatus() {
         System.out.println("PROCESS STATUS");
@@ -460,38 +529,11 @@ public class ProcessManagerImpl implements ProcessManager {
         }
 
         System.out.println("PENDING:");
-        MyList<Proceso> procesos = procesosEnMemoria.values();
-
-        boolean hayPendientes = false;
-
-        for (int i = 0; i < procesos.size(); i++) {
-            Proceso proceso = procesos.get(i);
-
-            if (proceso.getEstado() == EstadoProceso.PENDING) {
-                imprimirProcesoResumen(proceso);
-                hayPendientes = true;
-            }
-        }
-
-        if (!hayPendientes) {
-            System.out.println("No hay procesos pendientes.");
-        }
+        imprimirPendientesOrdenados(false);
 
         System.out.println("FINISHED:");
-        boolean hayFinalizados = false;
+        imprimirFinalizadosDesdePila(false);
 
-        for (int i = 0; i < procesos.size(); i++) {
-            Proceso proceso = procesos.get(i);
-
-            if (proceso.getEstado() == EstadoProceso.FINISHED) {
-                imprimirProcesoResumen(proceso);
-                hayFinalizados = true;
-            }
-        }
-
-        if (!hayFinalizados) {
-            System.out.println("No hay procesos finalizados en memoria.");
-        }
     }
 
     @Override
@@ -506,38 +548,11 @@ public class ProcessManagerImpl implements ProcessManager {
         }
 
         System.out.println("PENDING:");
-        MyList<Proceso> procesos = procesosEnMemoria.values();
-
-        boolean hayPendientes = false;
-
-        for (int i = 0; i < procesos.size(); i++) {
-            Proceso proceso = procesos.get(i);
-
-            if (proceso.getEstado() == EstadoProceso.PENDING) {
-                imprimirProcesoDetalle(proceso);
-                hayPendientes = true;
-            }
-        }
-
-        if (!hayPendientes) {
-            System.out.println("No hay procesos pendientes.");
-        }
+        imprimirPendientesOrdenados(true);
 
         System.out.println("FINISHED:");
-        boolean hayFinalizados = false;
+        imprimirFinalizadosDesdePila(true);
 
-        for (int i = 0; i < procesos.size(); i++) {
-            Proceso proceso = procesos.get(i);
-
-            if (proceso.getEstado() == EstadoProceso.FINISHED) {
-                imprimirProcesoDetalle(proceso);
-                hayFinalizados = true;
-            }
-        }
-
-        if (!hayFinalizados) {
-            System.out.println("No hay procesos finalizados en memoria.");
-        }
     }
 
     @Override
