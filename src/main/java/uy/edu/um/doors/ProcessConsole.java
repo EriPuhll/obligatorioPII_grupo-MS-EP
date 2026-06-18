@@ -194,17 +194,16 @@ public class ProcessConsole {
 
     private void printHelp() {
         System.out.println("Comandos disponibles:");
-        System.out.println("  pload -p [path_csv_procesos] -u [path_csv_usuarios]  Carga usuarios y procesos desde archivos CSV");
+        System.out.println("  pload -p process.csv -u users.csv  Carga usuarios y procesos desde archivos CSV");
         System.out.println("  pprepare              Prepara procesos nuevos y calcula prioridad");
         System.out.println("  pexecute              Ejecuta el próximo proceso pendiente");
         System.out.println("  pfinish OK            Finaliza el proceso actual correctamente");
         System.out.println("  pfinish ERROR         Finaliza el proceso actual con error");
-        System.out.println("  pfinish TERM [UID]    Finaliza forzadamente el proceso actual");
+        System.out.println("  pfinish TERM UID    Finaliza forzadamente el proceso actual");
         System.out.println("  pstatus               Muestra estado general de procesos");
         System.out.println("  pstatus -verbose      Muestra estado con detalle de eventos");
-        System.out.println("  pstatus -u [UID]      Muestra procesos de un usuario");
-        System.out.println("  pstatus -p [PID]      Muestra detalle de un proceso");
-        System.out.println("  help                  Muestra esta ayuda");
+        System.out.println("  pstatus -u UID      Muestra procesos de un usuario");
+        System.out.println("  pstatus -p PID      Muestra detalle de un proceso");
         System.out.println("  exit                  Sale del sistema");
     }
 }

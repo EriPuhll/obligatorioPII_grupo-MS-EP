@@ -78,13 +78,7 @@ public class Proceso implements Comparable<Proceso> {
             }
         }
 
-        int pesoUsuario;
-
-        if (usuario.getTipo() == TipoUsuario.ADMIN) {
-            pesoUsuario = 32;
-        } else {
-            pesoUsuario = 16;
-        }
+        int pesoUsuario = usuario.getPeso();
 
         this.prioridad = ((8 * cantidadCpu + 2 * cantidadRam + 2 * cantidadDisk) / totalEventos)
                 + pesoUsuario * totalEventos;
