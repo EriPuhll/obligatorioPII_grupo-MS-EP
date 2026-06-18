@@ -1,7 +1,8 @@
 package uy.edu.um.doors;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.io.IOException;
 
 import uy.edu.um.dominio.EstadoFinalizacion;
@@ -66,8 +67,12 @@ public class ProcessManagerImpl implements ProcessManager {
     }
 
     private void cargarUsuarios(String usersCsvPath) {
-        try (BufferedReader br = new BufferedReader(new FileReader(usersCsvPath))) {
-            String linea = br.readLine(); // saltea encabezado: uid;alias;type
+
+        Path path = Path.of(usersCsvPath);
+
+        try (BufferedReader br = Files.newBufferedReader(path)) {
+
+            String linea = br.readLine();//saltea encabezados
 
             while ((linea = br.readLine()) != null) {
                 if (linea.trim().isEmpty()) {
@@ -105,8 +110,11 @@ public class ProcessManagerImpl implements ProcessManager {
     }
 
     private void cargarProcesos(String processCsvPath) {
-        try (BufferedReader br = new BufferedReader(new FileReader(processCsvPath))) {
-            String linea = br.readLine(); // saltea encabezado: pid;uid;name;events
+        Path path = Path.of(processCsvPath);
+
+        try (BufferedReader br = Files.newBufferedReader(path)) {
+
+            String linea = br.readLine(); //saltea encabezado
 
             while ((linea = br.readLine()) != null) {
                 if (linea.trim().isEmpty()) {
@@ -156,6 +164,7 @@ public class ProcessManagerImpl implements ProcessManager {
     }
 
     private MyList<Evento> parsearEventos(String eventosTexto) throws Exception {
+
         MyList<Evento> eventos = new MyLinkedListImpl<>();
 
         if (eventosTexto == null || eventosTexto.trim().isEmpty()) {
