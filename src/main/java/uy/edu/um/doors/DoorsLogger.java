@@ -29,20 +29,18 @@ public class DoorsLogger {
     public void log(String mensaje) {
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
         String linea = "[" + timestamp + "]: " + mensaje;
-
         escribir(linea);
     }
 
     public void logBlock(String bloque) {
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
         String texto = "[" + timestamp + "]: " + bloque;
-
         escribir(texto);
     }
 
     private void escribir(String texto) {
-        try (BufferedWriter writer = Files.newBufferedWriter(logFilePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-
+        try (BufferedWriter writer = Files.newBufferedWriter(logFilePath,
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             writer.write(texto);
             writer.newLine();
 

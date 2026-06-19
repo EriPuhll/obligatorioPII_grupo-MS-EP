@@ -240,8 +240,7 @@ public class ProcessManagerImpl implements ProcessManager {
     @Override
     public void prepareProcesses() {
         while (!procesosNuevos.isEmpty()) {
-            try {
-                Proceso proceso = procesosNuevos.dequeue();
+            try {Proceso proceso = procesosNuevos.dequeue();
 
                 proceso.calcularPrioridad();
                 proceso.setEstado(EstadoProceso.PENDING);
